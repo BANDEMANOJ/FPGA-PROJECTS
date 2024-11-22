@@ -1,0 +1,5481 @@
+module lcd(clk,the_state,mode,cand_no,vc_thousand,vc_hun,vc_tens,vc_ones,thousand,hun,tens,ones,data, Lcd_e,Lcd_rs,reset);
+ 
+input clk;
+input [1:0]the_state;
+input [2:0]mode;
+input [2:0]cand_no;
+input [2:0]vc_thousand;
+input [3:0]vc_hun;
+input [3:0]vc_tens;
+input [3:0]vc_ones;
+input [2:0]thousand;
+input [3:0]hun;
+input [3:0]tens;
+input [3:0]ones;
+
+output [7:0] data; // LCD 8 BIT DATA
+
+output reg Lcd_e,Lcd_rs; // LCD ENABLE, REGISTER SELECT
+
+input reset; 
+
+reg [7:0]Lcd_cmd; // LCD COMMAND 
+reg [19:0]state =0;
+
+
+
+reg [19:0]count=0; // state counter
+
+assign data=Lcd_cmd; // assigning Lcd command to 8'b Lcd data
+
+always@(posedge clk )
+
+begin
+if(reset==0)
+begin
+
+Lcd_e<=1;
+
+Lcd_rs<=0;
+
+Lcd_cmd<=8'h01; // clear display=01h
+
+if(count==12) // WAIT MIN. 12 CLOCK CYCLES FOR LCD_E=1
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+else
+
+
+case(the_state)
+0: begin 	
+Lcd_e<=0;
+count<=0;
+Lcd_rs<=0;
+end 
+1: begin
+case(state)
+//Power on Initialization starts
+0:begin // IDLE STATE
+Lcd_e<=0;
+
+Lcd_rs<=0;
+if(count==750000) // WAIT 750000(half cycle) CLK OR 15 ms
+begin
+count<=0;
+state<=state+1;
+end
+else
+
+count<=count+1;
+
+end
+1:begin
+
+Lcd_e<=1;    // MUST BE HIGH FOR 12 CLOCK CYCLES
+
+Lcd_cmd<=8'h38; 
+
+if(count==12) //WAIT 12 CLOCK CYCLES
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+2:begin
+
+Lcd_e<=0;
+
+if(count==250000) // WAIT 205000 CYCLES
+
+begin
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+3: begin
+
+Lcd_e<=1; // LCD_ENABLE=1
+
+Lcd_cmd<=8'h38;
+
+if(count==12) // WAIT 12 CLOCK CYCLES
+
+begin
+
+count<=0;
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+4:begin
+
+Lcd_e<=0;
+
+
+//Lcd_c<md<=4'h3;
+
+if(count==8000)   // WAIT 5000 CLOCK CYCLES
+
+begin
+
+count<=0;
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+5:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h38;
+
+// WRITE 03H
+
+if(count==12) // WAIT FOR 12 CLOCK CYCLES
+
+begin
+
+count<=0;
+
+state<=state+1;
+end
+
+else
+
+count<=count+1;
+
+end
+
+6:begin
+
+Lcd_e<=0;
+
+
+if(count==8000)  // WAIT FOR 2000 CLOCK CYCLES
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+count<=count+1;
+
+end
+
+
+//INITIALIZATION DONE------ end of power on initialization-
+
+//----DISPLAY CONFIGURATION
+
+//---Start of FUNCTION SET COMMAND= 28h-
+7:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h38; // FUNCTION SET--- COMMAND=38h---
+if(count==12) // WAIT MIN. 12 CLOCK CYCLES 
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+
+8:begin
+
+if(count==12) // WAIT FOR 12 CLOCK CYCLES
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+//----end of 8 bit FUNCTION SET COMMAND-
+
+//---------wait for 40 micro sec after 8 bit sent
+
+9:begin
+
+if(count==2000) // WAIT FOR 2000 CLOCK CYCLES
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//-----Start of ENTRY MODE SET COMMAND=06h-
+
+10:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h06; // WRITE 06h
+
+if(count==12) // WAIT MIN. 12 CLOCK CYCLES 
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+end
+
+
+11:begin
+
+if(count==12) // WAIT 12 CLOCK CYCLES
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----end of 8 bit ENTRY MODE SET COMMAND-F
+
+//---------wait for 40 micro sec after 8 bit sent
+12:begin
+
+if(count==2000) // WAIT FOR 2000 CLOCK CYCLES AFTER EVERY 8'bit WRITE
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//-------Start of DISPLAY ON OFF COMMAND=0Ch-
+
+13:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h0c; // SET_DISPLAY=0Ch
+
+if(count==12) // WAIT MIN. 12 CLOCK CYCLES FOR LCD_E=1
+begin
+
+count<=0;
+state<=state+1;
+
+end
+
+else count<=count+1;
+
+end
+
+
+14:begin
+
+if(count==12) // wait 12 clock cycles
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----end of 8 bit DISPLAY ON OFF COMMAND---
+
+
+//--wait for 40 micro sec after 8 bit sent
+
+15:begin
+
+if(count==2000) // wait 2000 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//-------Start of CLEAR DISPLAY COMMAND=01h-
+16:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h01; // clear display=01h
+
+if(count==12) // WAIT MIN. 12 CLOCK CYCLES FOR LCD_E=1
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+17:begin
+
+if(count==12) // 12 cycles
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----end of 8 bit CLEAR DISPLAY COMMAND
+18:begin
+
+if(count==82000) // wait for 82000 ycles=1.64 ms INITIALIZATION OF LCD and end of
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- writing dtat into LCD----
+
+// issue COMMAND=80h to move crusor to first row
+19:begin
+
+Lcd_e<=1;  Lcd_cmd<=8'h80; // SET ADDRESS=80h, Move crusor to first
+if(count==12) // Wait for 12 clock cycles during LCD_E=1
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+20:begin
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//------wait for 40 micro sec after 8
+21:begin
+
+if(count==2000) // wait 2000 cycles = 40 microsec.
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//
+
+//VOTE CASTING OPERATION BEGINS
+
+22:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h56; // write 'V' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+23:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+24:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+25:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h4F; // write 'O' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+26:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+27:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+28:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h54; // write 'T' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+29:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+30:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+31:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h45; // write 'E' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+32:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+33:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+/*
+
+34:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h10; // write 'space' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+35:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+36:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+*/
+
+34:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h43; // write 'C' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+35:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+36:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+37:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h41; // write 'A' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+38:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+39:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+40:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h53; // write 'S' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+41:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+42:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+43:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h54; // write 'T' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+44:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+45:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+
+46:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h49; // write 'I' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+47:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+48:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+49:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h4E; // write 'N' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+50:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+51:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+52:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h47; // write 'G' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+
+//----- WAIT for 40 Micro sec
+
+53:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+54:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+55:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h3A; // write ':' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+56:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+57:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+
+
+//
+//------ WRITING DATA INTO LCD
+58:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+case(vc_thousand)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+59:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+60:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+
+
+61:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+case(vc_hun)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+62:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+63:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+64:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+case(vc_tens)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+65:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+66:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+67:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+case(vc_ones)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+68:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+69:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+default: state<=0;
+endcase
+
+end
+
+
+
+// END OF VOTE CASTING
+
+
+
+
+//CASE 2- VOTING CLOSED STATE BEGINS
+
+2: begin
+case(state)
+//Power on Initialization starts
+0:begin // IDLE STATE
+Lcd_e<=0;
+
+Lcd_rs<=0;
+if(count==750000) // WAIT 750000(half cycle) CLK OR 15 ms
+begin
+count<=0;
+state<=state+1;
+end
+else
+
+count<=count+1;
+
+end
+1:begin
+
+Lcd_e<=1;    // MUST BE HIGH FOR 12 CLOCK CYCLES
+
+Lcd_cmd<=8'h38; 
+
+if(count==12) //WAIT 12 CLOCK CYCLES
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+2:begin
+
+Lcd_e<=0;
+
+if(count==250000) // WAIT 205000 CYCLES
+
+begin
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+3: begin
+
+Lcd_e<=1; // LCD_ENABLE=1
+
+Lcd_cmd<=8'h38;
+
+if(count==12) // WAIT 12 CLOCK CYCLES
+
+begin
+
+count<=0;
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+4:begin
+
+Lcd_e<=0;
+
+
+//Lcd_c<md<=4'h3;
+
+if(count==8000)   // WAIT 5000 CLOCK CYCLES
+
+begin
+
+count<=0;
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+5:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h38;
+
+// WRITE 03H
+
+if(count==12) // WAIT FOR 12 CLOCK CYCLES
+
+begin
+
+count<=0;
+
+state<=state+1;
+end
+
+else
+
+count<=count+1;
+
+end
+
+6:begin
+
+Lcd_e<=0;
+
+
+if(count==8000)  // WAIT FOR 2000 CLOCK CYCLES
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+count<=count+1;
+
+end
+
+
+//INITIALIZATION DONE------ end of power on initialization-
+
+//----DISPLAY CONFIGURATION
+
+//---Start of FUNCTION SET COMMAND= 28h-
+7:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h38; // FUNCTION SET--- COMMAND=38h---
+if(count==12) // WAIT MIN. 12 CLOCK CYCLES 
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+
+8:begin
+
+if(count==12) // WAIT FOR 12 CLOCK CYCLES
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+//----end of 8 bit FUNCTION SET COMMAND-
+
+//---------wait for 40 micro sec after 8 bit sent
+
+9:begin
+
+if(count==2000) // WAIT FOR 2000 CLOCK CYCLES
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//-----Start of ENTRY MODE SET COMMAND=06h-
+
+10:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h06; // WRITE 06h
+
+if(count==12) // WAIT MIN. 12 CLOCK CYCLES 
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+end
+
+
+11:begin
+
+if(count==12) // WAIT 12 CLOCK CYCLES
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----end of 8 bit ENTRY MODE SET COMMAND-F
+
+//---------wait for 40 micro sec after 8 bit sent
+12:begin
+
+if(count==2000) // WAIT FOR 2000 CLOCK CYCLES AFTER EVERY 8'bit WRITE
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//-------Start of DISPLAY ON OFF COMMAND=0Ch-
+
+13:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h0c; // SET_DISPLAY=0Ch
+
+if(count==12) // WAIT MIN. 12 CLOCK CYCLES FOR LCD_E=1
+begin
+
+count<=0;
+state<=state+1;
+
+end
+
+else count<=count+1;
+
+end
+
+
+14:begin
+
+if(count==12) // wait 12 clock cycles
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----end of 8 bit DISPLAY ON OFF COMMAND---
+
+
+//--wait for 40 micro sec after 8 bit sent
+
+15:begin
+
+if(count==2000) // wait 2000 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//-------Start of CLEAR DISPLAY COMMAND=01h-
+16:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h01; // clear display=01h
+
+if(count==12) // WAIT MIN. 12 CLOCK CYCLES FOR LCD_E=1
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+17:begin
+
+if(count==12) // 12 cycles
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----end of 8 bit CLEAR DISPLAY COMMAND
+18:begin
+
+if(count==82000) // wait for 82000 ycles=1.64 ms INITIALIZATION OF LCD and end of
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- writing dtat into LCD----
+
+// issue COMMAND=80h to move crusor to first row
+19:begin
+
+Lcd_e<=1;  Lcd_cmd<=8'h80; // SET ADDRESS=80h, Move crusor to first
+if(count==12) // Wait for 12 clock cycles during LCD_E=1
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+20:begin
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//------wait for 40 micro sec after 8
+21:begin
+
+if(count==2000) // wait 2000 cycles = 40 microsec.
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//
+
+//------ WRITING DATA INTO LCD
+
+22:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h54; // write 'T' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+23:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+24:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+25:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h4F; // write 'O' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+26:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+27:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+28:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h54; // write 'T' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+29:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+30:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+31:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h41; // write 'A' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+32:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+33:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+34:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h4C; // write 'L' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+35:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+36:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+37:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h20; // write 'space' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+38:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+39:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+40:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h56; // write 'V' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+41:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+42:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+43:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h4F; // write 'O' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+44:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+45:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+46:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h54; // write 'T' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+47:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+48:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+49:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h45; // write 'E' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+50:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+51:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+52:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h53; // write 'S' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+53:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+54:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+55:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+Lcd_cmd<=8'h3A; // write ':' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+56:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+57:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+58:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+case(vc_thousand)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+59:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+60:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+
+61:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+case(vc_hun)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+62:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+63:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+64:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+case(vc_tens)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+65:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+66:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+67:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+case(vc_ones)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+68:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+69:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+default: state<=0;
+
+endcase
+
+end
+
+// VOTING CLOSED STATE ENDS
+
+
+
+3: begin         //DISPLAY STATE BEGINS
+case(state)
+//Power on Initialization starts
+0:begin // IDLE STATE
+Lcd_e<=0;
+
+Lcd_rs<=0;
+if(count==750000) // WAIT 750000(half cycle) CLK OR 15 ms
+begin
+count<=0;
+state<=state+1;
+end
+else
+
+count<=count+1;
+
+end
+1:begin
+
+Lcd_e<=1;    // MUST BE HIGH FOR 12 CLOCK CYCLES
+
+Lcd_cmd<=8'h38; 
+
+if(count==12) //WAIT 12 CLOCK CYCLES
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+2:begin
+
+Lcd_e<=0;
+
+if(count==250000) // WAIT 205000 CYCLES
+
+begin
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+3: begin
+
+Lcd_e<=1; // LCD_ENABLE=1
+
+Lcd_cmd<=8'h38;
+
+if(count==12) // WAIT 12 CLOCK CYCLES
+
+begin
+
+count<=0;
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+4:begin
+
+Lcd_e<=0;
+
+
+//Lcd_c<md<=4'h3;
+
+if(count==8000)   // WAIT 5000 CLOCK CYCLES
+
+begin
+
+count<=0;
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+5:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h38;
+
+// WRITE 03H
+
+if(count==12) // WAIT FOR 12 CLOCK CYCLES
+
+begin
+
+count<=0;
+
+state<=state+1;
+end
+
+else
+
+count<=count+1;
+
+end
+
+6:begin
+
+Lcd_e<=0;
+
+
+if(count==8000)  // WAIT FOR 2000 CLOCK CYCLES
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+count<=count+1;
+
+end
+
+
+//INITIALIZATION DONE------ end of power on initialization-
+
+//----DISPLAY CONFIGURATION
+
+//---Start of FUNCTION SET COMMAND= 38h-
+7:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h38; // FUNCTION SET--- COMMAND=38h---
+if(count==12) // WAIT MIN. 12 CLOCK CYCLES 
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+
+8:begin
+
+if(count==12) // WAIT FOR 12 CLOCK CYCLES
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+//----end of 8 bit FUNCTION SET COMMAND-
+
+//---------wait for 40 micro sec after 8 bit sent
+
+9:begin
+
+if(count==2000) // WAIT FOR 2000 CLOCK CYCLES
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//-----Start of ENTRY MODE SET COMMAND=06h-
+
+10:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h06; // WRITE 06h
+
+if(count==12) // WAIT MIN. 12 CLOCK CYCLES 
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+end
+
+
+11:begin
+
+if(count==12) // WAIT 12 CLOCK CYCLES
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----end of 8 bit ENTRY MODE SET COMMAND-F
+
+//---------wait for 40 micro sec after 8 bit sent
+12:begin
+
+if(count==2000) // WAIT FOR 2000 CLOCK CYCLES AFTER EVERY 8'bit WRITE
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//-------Start of DISPLAY ON OFF COMMAND=0Ch-
+
+13:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h0c; // SET_DISPLAY=0Ch
+
+if(count==12) // WAIT MIN. 12 CLOCK CYCLES FOR LCD_E=1
+begin
+
+count<=0;
+state<=state+1;
+
+end
+
+else count<=count+1;
+
+end
+
+
+14:begin
+
+if(count==12) // wait 12 clock cycles
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----end of 8 bit DISPLAY ON OFF COMMAND---
+
+
+//--wait for 40 micro sec after 8 bit sent
+
+15:begin
+
+if(count==2000) // wait 2000 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//-------Start of CLEAR DISPLAY COMMAND=01h-
+16:begin
+
+Lcd_e<=1;
+
+Lcd_cmd<=8'h01; // clear display=01h
+
+if(count==12) // WAIT MIN. 12 CLOCK CYCLES FOR LCD_E=1
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+17:begin
+
+if(count==12) // 12 cycles
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----end of 8 bit CLEAR DISPLAY COMMAND
+18:begin
+
+if(count==82000) // wait for 82000 ycles=1.64 ms INITIALIZATION OF LCD and end of
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- writing dtat into LCD----
+
+// issue COMMAND=80h to move crusor to first row
+19:begin
+
+Lcd_e<=1;  Lcd_cmd<=8'h80; // SET ADDRESS=80h, Move crusor to first
+if(count==12) // Wait for 12 clock cycles during LCD_E=1
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+20:begin
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//------wait for 40 micro sec after 8
+21:begin
+
+if(count==2000) // wait 2000 cycles = 40 microsec.
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//
+
+//------ WRITING DATA INTO LCD
+22:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+if(mode==0)
+Lcd_cmd<=8'h54; // write 'T' from CGROM ADDRESS =49h into LCD
+else if(mode==6)
+Lcd_cmd<=8'h57; // write ''W from CGROM ADDRESS =49h into LCD
+else if(mode!=0)
+Lcd_cmd<=8'h43; // write 'C' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+23:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+24:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+25:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode==0)
+Lcd_cmd<=8'h4F; // write 'O' from CGROM ADDRESS =49h into LCD
+else if(mode==6)
+Lcd_cmd<=8'h49; // write 'I' from CGROM ADDRESS =49h into LCD
+else if(mode!=0)
+Lcd_cmd<=8'h41; // write 'A' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+26:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+27:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+28:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode==0)
+Lcd_cmd<=8'h54; // write 'T' from CGROM ADDRESS =49h into LCD
+else if(mode==6)
+Lcd_cmd<=8'h4E; // write 'N' from CGROM ADDRESS =49h into LCD
+else if(mode!=0)
+Lcd_cmd<=8'h4E; // write 'N' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+29:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+30:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+31:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode==0)
+Lcd_cmd<=8'h41; // write 'A' from CGROM ADDRESS =49h into LCD
+else if(mode==6)
+Lcd_cmd<=8'h4E; // write 'N' from CGROM ADDRESS =49h into LCD
+else if(mode!=0)
+Lcd_cmd<=8'h44; // write 'D' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+32:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+33:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+34:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode==0)
+Lcd_cmd<=8'h4C; // write 'L' from CGROM ADDRESS =49h into LCD
+else if(mode==6)
+Lcd_cmd<=8'h45; // write 'E' from CGROM ADDRESS =49h into LCD
+else if(mode!=0)
+Lcd_cmd<=8'h49; // write 'I' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+35:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+36:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+37:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode==0)
+Lcd_cmd<=8'h10; // write 'space' from CGROM ADDRESS =49h into LCD
+else if(mode==6)
+Lcd_cmd<=8'h52; // write 'R' from CGROM ADDRESS =49h into LCD
+else if(mode!=0)
+Lcd_cmd<=8'h44; // write 'D' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+38:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+39:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+40:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode==0)
+Lcd_cmd<=8'h56; // write 'V' from CGROM ADDRESS =49h into LCD
+else if(mode==6)
+Lcd_cmd<=8'h3A; // write ':' from CGROM ADDRESS =49h into LCD
+else if(mode!=0)
+Lcd_cmd<=8'h41; // write 'A' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+41:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+42:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+43:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode==0)
+Lcd_cmd<=8'h4F; // write 'O' from CGROM ADDRESS =49h into LCD
+else if(mode==6)
+Lcd_cmd<=8'h10; // write 'space' from CGROM ADDRESS =49h into LCD
+else if(mode!=0)
+Lcd_cmd<=8'h54; // write 'T' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+44:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+45:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+46:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode==0)
+Lcd_cmd<=8'h54; // write 'T' from CGROM ADDRESS =49h into LCD
+else if(mode==6)
+Lcd_cmd<=8'h43; // write 'C' from CGROM ADDRESS =49h into LCD
+else if(mode!=0)
+Lcd_cmd<=8'h45; // write 'E' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+47:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+48:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+49:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode==0)
+Lcd_cmd<=8'h45; // write 'E' from CGROM ADDRESS =49h into LCD
+else if(mode==6)
+Lcd_cmd<=8'h41; // write 'A' from CGROM ADDRESS =49h into LCD
+else if(mode!=0)
+Lcd_cmd<=8'h3A; // write ':' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+50:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+51:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+52:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode==0)
+Lcd_cmd<=8'h53; // write 'S' from CGROM ADDRESS =49h into LCD
+else if(mode==6)
+Lcd_cmd<=8'h4E; // write 'N' from CGROM ADDRESS =49h into LCD
+else if(mode!=0)
+case(mode)
+0:Lcd_cmd<=8'h30; // write 'Cand:0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write 'Cand:1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write 'Cand:2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write 'Cand:3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write 'Cand:4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write 'Cand:5' from CGROM ADDRESS =49h into LCD
+6: case(cand_no)
+	1:Lcd_cmd<=8'h31; // write 'Cand:1' from CGROM ADDRESS =49h into LCD
+   2:Lcd_cmd<=8'h32; // write 'Cand:2' from CGROM ADDRESS =49h into LCD
+   3:Lcd_cmd<=8'h33; // write 'Cand:3' from CGROM ADDRESS =49h into LCD
+   4:Lcd_cmd<=8'h34; // write 'Cand:4' from CGROM ADDRESS =49h into LCD
+	5:Lcd_cmd<=8'h35; // write 'Cand:5' from CGROM ADDRESS =49h into LCD
+   endcase
+endcase
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+53:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+54:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+55:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode==0)
+Lcd_cmd<=8'h3A; // write ':' from CGROM ADDRESS =49h into LCD
+else if(mode==6)
+Lcd_cmd<=8'h44; // write 'D' from CGROM ADDRESS =49h into LCD
+else if(mode!=0)
+Lcd_cmd<=8'h10; // write 'space' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+56:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+57:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+58:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+if(mode==0)
+case(vc_thousand)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+else if(mode==6)
+Lcd_cmd<=8'h10; // write 'space' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+59:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+60:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+61:begin
+
+Lcd_e<=1; 
+
+if(mode==0)
+case(vc_hun)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+else if(mode==6)
+case(cand_no)
+	1:Lcd_cmd<=8'h31; // write 'Cand:1' from CGROM ADDRESS =49h into LCD
+   2:Lcd_cmd<=8'h32; // write 'Cand:2' from CGROM ADDRESS =49h into LCD
+   3:Lcd_cmd<=8'h33; // write 'Cand:3' from CGROM ADDRESS =49h into LCD
+   4:Lcd_cmd<=8'h34; // write 'Cand:4' from CGROM ADDRESS =49h into LCD
+	5:Lcd_cmd<=8'h35; // write 'Cand:5' from CGROM ADDRESS =49h into LCD
+ endcase
+
+if(count==12) // Wait for 12 clock cycles during LCD_E=1
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+62:begin
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+Lcd_e<=0;
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//------wait for 40 micro sec after 8
+63:begin
+
+if(count==2000) // wait 2000 cycles = 40 microsec.
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+64:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode==0)
+case(vc_tens)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+else if(mode!=0) begin
+Lcd_rs<=0; // data read or write operation
+Lcd_cmd<=8'hC0; // SET ADDRESS=80h, Move crusor to first
+end
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+65:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+66:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+67:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+if(mode==0)
+case(vc_ones)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+ else if(mode!=0)
+Lcd_cmd<=8'h56; // write 'V' from CGROM ADDRESS =49h into LCD
+
+
+if(count==12) // wait for 12 cycles.0
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+68:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+69:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+70:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+Lcd_cmd<=8'h4F; // write 'O' from CGROM ADDRESS =49h into LCD
+
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+71:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+72:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+73:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+Lcd_cmd<=8'h54; // write 'T' from CGROM ADDRESS =49h into LCD
+
+
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+74:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+75:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+76:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+Lcd_cmd<=8'h45; // write 'E' from CGROM ADDRESS =49h into LCD
+
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+77:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+78:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+/*
+
+76:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+if(mode!=0)
+Lcd_cmd<=8'h10; // write 'space' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+77:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+78:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+*/
+
+79:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+Lcd_cmd<=8'h53; // write 'S' from CGROM ADDRESS =49h into LCD
+
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+80:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+81:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+82:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+Lcd_cmd<=8'h50; // write 'P' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+83:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+84:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+85:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+Lcd_cmd<=8'h4F; // write 'O' from CGROM ADDRESS =49h into LCD
+
+
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+86:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+87:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+88:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+Lcd_cmd<=8'h4C; // write 'L' from CGROM ADDRESS =49h into LCD
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+89:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+90:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+91:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+Lcd_cmd<=8'h4C; // write 'L' from CGROM ADDRESS =49h into LCD
+
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+92:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+93:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+94:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+Lcd_cmd<=8'h45; // write 'E' from CGROM ADDRESS =49h into LCD
+
+
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+95:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+96:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+97:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+Lcd_cmd<=8'h44; // write 'D' from CGROM ADDRESS =49h into LCD
+
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+98:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+99:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+100:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+Lcd_cmd<=8'h3A; // write ':' from CGROM ADDRESS =49h into LCD
+
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+//----- WAIT for 40 Micro sec
+
+101:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+102:begin
+if(count ==2000)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+
+
+//
+103:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+case(thousand)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+104:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+105:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+106:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+case(hun)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+endcase
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+107:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+108:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+109:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+if(mode!=0)
+case(tens)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+110:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+111:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+112:begin
+
+Lcd_e<=1;
+
+Lcd_rs<=1; // data read or write operation
+
+
+if(mode!=0)
+case(ones)
+0:Lcd_cmd<=8'h30; // write '0' from CGROM ADDRESS =49h into LCD
+1:Lcd_cmd<=8'h31; // write '1' from CGROM ADDRESS =49h into LCD
+2:Lcd_cmd<=8'h32; // write '2' from CGROM ADDRESS =49h into LCD
+3:Lcd_cmd<=8'h33; // write '3' from CGROM ADDRESS =49h into LCD
+4:Lcd_cmd<=8'h34; // write '4' from CGROM ADDRESS =49h into LCD
+5:Lcd_cmd<=8'h35; // write '5' from CGROM ADDRESS =49h into LCD
+6:Lcd_cmd<=8'h36; // write '6' from CGROM ADDRESS =49h into LCD
+7:Lcd_cmd<=8'h37; // write '7' from CGROM ADDRESS =49h into LCD
+8:Lcd_cmd<=8'h38; // write '8' from CGROM ADDRESS =49h into LCD
+9:Lcd_cmd<=8'h39; // write '9' from CGROM ADDRESS =49h into LCD
+endcase
+
+if(count==12) // wait for 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+//----- WAIT for 40 Micro sec
+113:begin
+if(count ==12)
+begin
+Lcd_e<=0;
+count<=0;
+state<=state+1;
+end
+else
+count <= count +1;
+end
+
+114:begin
+
+if(count==2000) // wait 12 cycles
+
+begin
+
+count<=0;
+
+state<=state+1;
+
+end
+
+else
+
+count<=count+1;
+
+end
+
+
+
+
+
+//--end of 8 bit data transfer----
+
+default: state<=0;
+
+endcase
+end
+endcase
+
+end
+
+
+
+endmodule
+
+
+module evm1(input clk_100MHz,           // from Basys 3
+    input  sw,            // 16 switches to input code to open/close voting
+    input btn_1,                // btnL for candidate 1
+    input btn_2,                // btnC for candidate 2
+    input btn_3,                // btnR for candidate 3
+    input btn_4,                // btnR for candidate 4
+	 input btn_5,                // btnR for candidate 5
+    input btn_ov_cv,
+    input [2:0] mode,           
+    input reset,                // btnU for system reset
+	// input lcd_rst,
+	 output lcd_e,
+	 output lcd_rs,
+	 output [7:0]data,
+    //output [0:6] seg,           // 7 segment cathodes
+    //output [3:0] an,            // 7 segment anodes*
+	// output [3:0]sw_led,
+    output [7:0] LED           // 16 LEDs show when voting is open
+    );
+	 
+	 wire [2:0]thousand;
+	 wire [3:0]hun;
+   wire [3:0]tens;
+   wire [3:0]ones;
+   
+    // Internal wires for connecting modules
+    wire [2:0] w_cand_no;
+    wire w_1Hz, w_2Hz;                                      // output from Hz generators
+    wire w_btn1, w_btn2, w_btn3, w_btn4, w_btn5 ,w_btn_ov_cv ;      // output from debouncers to sm
+    wire w_en_leds;                                         // output from sm to led driver
+    wire [11:0] w_vote_count;                                // output from sm to 7 seg control
+    wire [1:0] w_the_state;                                 // output from sm to 7 seg control
+    wire [11:0] w_the_winner;
+	 wire [2:0]w_thousand;
+    wire [3:0] w_hundreds;
+    wire [3:0] w_tens;
+    wire [3:0] w_ones;
+	 wire w_12MHz;    
+    
+    // Instantiate inner modules
+    // Hz Generators
+    oneHz_gen uno(.clk_100MHz(clk_100MHz), .clk_1Hz(w_1Hz));
+    twoHz_gen dos(.clk_100MHz(clk_100MHz), .clk_2Hz(w_2Hz));
+	// Hz12M_gen m(.clk_100MHz(clk_100MHz), .clk_12MHz(w_12MHz));
+
+    // Button Debouncers
+    btn_debounce b1(.clk(clk_100MHz), .btn_in(btn_1), .btn_out(w_btn1));
+    btn_debounce b2(.clk(clk_100MHz), .btn_in(btn_2), .btn_out(w_btn2));
+    btn_debounce b3(.clk(clk_100MHz), .btn_in(btn_3), .btn_out(w_btn3));
+    btn_debounce b4(.clk(clk_100MHz), .btn_in(btn_4), .btn_out(w_btn4));
+    btn_debounce b5(.clk(clk_100MHz), .btn_in(btn_5), .btn_out(w_btn5));
+    btn_debounce bovcv(.clk(clk_100MHz), .btn_in(btn_ov_cv), .btn_out(w_btn_ov_cv));
+    btn_debounce rst(.clk(clk_100MHz), .btn_in(reset), .btn_out(w_reset));
+    // Binary to BCD Converter
+    bin2bcd b2b(.bin_in(w_vote_count),.thousand(w_thousand),.hundreds(w_hundreds), .tens(w_tens), .ones(w_ones));
+    // LED Driver
+    led_driver led_d(.clk_2Hz(w_2Hz), .enable(w_en_leds), .LED(LED));
+    // State Machine
+    state_machine sm(.clk_1Hz(w_1Hz), .btn1(w_btn1), .btn2(w_btn2), .btn3(w_btn3),.btn4(w_btn4), .btn5(w_btn5), .btn_ov_cv(w_btn_ov_cv), 
+                     .reset(w_reset), .sw(sw), .mode(mode),.cand_no(w_cand_no),.vote_count(w_vote_count), .the_state(w_the_state), 
+                     .the_winner(w_the_winner), .enable_leds(w_en_leds));
+	 bin2bcd b(w_the_winner,thousand,hun,tens,ones); 
+							
+	 lcd l(clk_100MHz,w_the_state,mode,w_cand_no,w_thousand,w_hundreds,w_tens,w_ones,thousand,hun,tens,ones,data, lcd_e,lcd_rs,reset);
+	/* assign sw_led[0]=w_vote_count[0];
+	 assign sw_led[1]=w_vote_count[1];
+	 assign sw_led[2]=w_vote_count[2];
+	 assign sw_led[3]=w_vote_count[3];  */
+
+	 
+    // 7 Segment Display Controller
+    //seg7_control seg7(.clk_100MHz(clk_100MHz), .the_state(w_the_state),.vc_hundreds(w_hundreds), .vc_tens(w_tens), .vc_ones(w_ones), 
+                      //.the_winner(w_the_winner),.mode(mode), .cand_no(w_cand_no),.seg(seg), .an(an), .reset(w_reset));
+    
+endmodule
+
+/*
+module Hz12M_gen(
+    input clk_100MHz,       // from Basys 3
+    output  clk_12MHz
+    );
+    
+    reg counter_reg = 0;
+    reg clk_reg = 0;
+    
+    always @(posedge clk_100MHz) begin
+	 if(counter_reg< 499999) begin
+	 counter_reg<=counter_reg+1;
+				
+				end
+		else begin 
+			 clk_reg<=~clk_reg;
+				counter_reg <= 0;
+				end
+
+    end
+    
+    assign clk_12MHz = clk_reg;
+    
+endmodule 
+*/
+
+//one hz generator
+module oneHz_gen(
+    input clk_100MHz,       // from Basys 3
+    output clk_1Hz
+    );
+    
+    reg [25:0] counter_reg = 0;
+    reg clk_reg = 0;
+    
+    always @(posedge clk_100MHz) begin
+        if(counter_reg == 49_999_999) begin
+            counter_reg <= 0;
+            clk_reg <= ~clk_reg;
+        end
+        else
+            counter_reg <= counter_reg + 1;
+    end
+    
+    assign clk_1Hz = clk_reg;
+    
+endmodule
+
+//two hz generatior
+module twoHz_gen(
+    input clk_100MHz,           // from Basys 3
+    output clk_2Hz
+    );
+    
+    reg [24:0] counter_reg = 0;
+    reg clk_reg = 0;
+    
+    always @(posedge clk_100MHz) begin
+        if(counter_reg == 24_999_999) begin
+            counter_reg <= 0;
+            clk_reg <= ~clk_reg;
+        end
+        else
+            counter_reg <= counter_reg + 1;
+    end
+    
+    assign clk_2Hz = clk_reg;
+    
+endmodule
+
+//state machine
+module state_machine(
+    input clk_1Hz,
+    input btn1,
+    input btn2,
+    input btn3,
+    input btn4,
+	 input btn5,
+    input btn_ov_cv,
+    input reset,
+    input  sw,
+    input [2:0] mode,
+    output reg [2:0]cand_no,
+    output [11:0] vote_count,    // 4 bits allows for 15 votes, votes = 2^(number of bits) - 1
+    output [1:0] the_state,
+    output reg [11:0] the_winner,    
+    output enable_leds         // to enable flashing LEDs
+ );
+    reg enable=0;
+    reg [1:0] vc_ctr = 0;                   // Voting Closed Counter Register
+    reg [11:0] candidate1_votes, candidate2_votes, candidate3_votes,candidate4_votes,candidate5_votes, total_votes;
+    // ******************************
+    // The following reg is the code to enable opening/closing of voting by administrator *
+    
+                    reg  admin_code = 1;
+    
+    // It is represented on the Basys 3 by the 16 switches ************
+    // ******************************
+    // State Parameters
+    parameter IDLE          = 2'b00;
+    parameter VOTING_OPEN   = 2'b01;
+    parameter VOTING_CLOSED = 2'b10;
+    parameter DISPLAY_WIN   = 2'b11;
+    
+    reg [1:0] state_reg;                    // State Register
+    
+    // Next State Logic
+    always @(posedge clk_1Hz or negedge reset) begin
+        if(reset==0)
+            state_reg <= IDLE;
+        else
+            case(state_reg)
+                IDLE            :   if(btn_ov_cv==0 && sw == admin_code)
+                                      //  if(sw == admin_code)
+                                            state_reg <= VOTING_OPEN;
+                                
+                VOTING_OPEN     :    begin   if(((btn1==0) | (btn2==0) | (btn3==0) | (btn4==0) | (btn5==0)) && (enable==0) && (state_reg == VOTING_OPEN) ) 
+	                                 enable<=1;
+					                     if(btn_ov_cv==0 && sw == admin_code)
+                                       // if(sw == admin_code) 
+													 begin
+                                            state_reg <= VOTING_CLOSED;
+														    enable<=0; 
+													 end
+											 end 
+                
+                VOTING_CLOSED   :   if(vc_ctr == 2'b11)
+                                        state_reg <= DISPLAY_WIN;
+                
+                DISPLAY_WIN     :   if(btn_ov_cv==0)
+                                        state_reg <= IDLE;
+            endcase
+    end
+    // Total Votes Register Logic
+    always @(posedge clk_1Hz or negedge reset) begin
+        if(reset==0)
+            total_votes <= 0;
+        else
+            if(((btn1==0) | (btn2==0) | (btn3==0) | (btn4==0) | (btn5==0)) && (enable==0)) 
+                if(state_reg == VOTING_OPEN)
+                    total_votes <= total_votes + 1;
+    end
+    
+    // Candidate Votes Register Logic
+    always @(posedge clk_1Hz or negedge reset) begin
+        if(reset==0) begin
+            candidate1_votes <= 0;
+            candidate2_votes <= 0;
+            candidate3_votes <= 0;
+            candidate4_votes <= 0;
+            candidate5_votes <= 0;
+        end else begin
+            if((btn1==0) && state_reg == VOTING_OPEN &&  (enable==0))
+                candidate1_votes <= candidate1_votes + 1;
+            if((btn2==0) && state_reg == VOTING_OPEN && (enable==0))
+                candidate2_votes <= candidate2_votes + 1;
+            if((btn3==0) && state_reg == VOTING_OPEN && (enable==0))
+                candidate3_votes <= candidate3_votes + 1;
+            if((btn4==0) && state_reg == VOTING_OPEN && (enable==0))
+                candidate4_votes <= candidate4_votes + 1;
+             if((btn5==0) && state_reg == VOTING_OPEN && (enable==0))
+             candidate5_votes <= candidate5_votes + 1;
+        end
+    end
+    
+    // Voting Closed Counter Register Logic
+    always @(posedge clk_1Hz or negedge reset) begin
+        if(reset==0)
+            vc_ctr <= 0;
+        else
+            if(state_reg == VOTING_CLOSED)
+                vc_ctr <= vc_ctr + 1;
+    end
+    
+    // Winner Register Control Logic
+    always @(posedge clk_1Hz or negedge reset) begin
+        if(reset==0) begin
+            the_winner <= 0;
+				cand_no=3'b000;
+        end else begin
+            case(mode)
+                3'b001: the_winner <= candidate1_votes;
+                3'b010: the_winner <= candidate2_votes;
+                3'b011: the_winner <= candidate3_votes;
+                3'b100: the_winner <= candidate4_votes;
+                3'b101: the_winner <= candidate5_votes;
+                3'b110: begin
+                    
+                    
+                        // Set winner based on highest votes
+                        if(candidate1_votes > candidate2_votes && candidate1_votes > candidate3_votes 
+                        && candidate1_votes > candidate4_votes && candidate1_votes > candidate5_votes) begin
+                            the_winner <= candidate1_votes;
+                            cand_no=3'b001; // Candidate 1
+                        end else if(candidate2_votes > candidate1_votes && candidate2_votes > candidate3_votes
+                        && candidate2_votes > candidate4_votes && candidate2_votes > candidate5_votes) begin
+                            the_winner <= candidate2_votes; 
+                            cand_no=3'b010;// Candidate 2
+                        end else if(candidate3_votes > candidate1_votes && candidate3_votes > candidate2_votes
+                        && candidate3_votes > candidate4_votes && candidate3_votes > candidate5_votes) begin
+                            the_winner <= candidate3_votes;
+                            cand_no=3'b011; // Candidate 3
+                        end else if(candidate4_votes > candidate1_votes && candidate4_votes > candidate2_votes
+                        && candidate4_votes > candidate3_votes && candidate4_votes > candidate5_votes) begin
+                            the_winner <= candidate4_votes;
+                            cand_no=3'b100; // Candidate 4
+                        end 
+								else if(candidate5_votes > candidate1_votes && candidate5_votes > candidate2_votes
+                        && candidate5_votes > candidate3_votes && candidate5_votes > candidate4_votes) begin
+                            the_winner <= candidate5_votes; // Candidate 5
+									 cand_no=3'b101; // Candidate 5
+                        end
+                        else begin
+                        // All candidates have the same number of votes
+                        the_winner <= 4'b0000; // No winner
+                        //state_reg <= VOTING_OPEN; // Return to VOTING_OPEN for a re-vote
+                        end
+                end
+                default: the_winner <= 0;
+            endcase
+        end
+    end
+    
+    // Assigning outputs
+    assign vote_count = total_votes;
+    assign enable_leds = (state_reg == VOTING_OPEN) ? 1 : 0;
+    assign the_state = state_reg;
+    
+endmodule
+
+//binary to bcd
+module bin2bcd(
+    input [11:0] bin_in,        // 9-bit input to handle values up to 500
+	 output reg [2:0] thousand ,   // 3 bit output for thousands place(0-4)
+    output reg [3:0] hundreds,  // 4-bit output for hundreds place (0-9)
+    output reg [3:0] tens,      // 4-bit output for tens place (0-9)
+    output reg [3:0] ones       // 4-bit output for ones place (0-9)
+    );
+    
+    always @* begin
+	     thousand=bin_in/1000 ;
+        hundreds = bin_in / 100;
+        tens = bin_in / 10;
+        ones = bin_in % 10;
+    end
+endmodule
+
+//button debounce
+module btn_debounce(
+    input clk,
+    input btn_in,
+    output btn_out
+    );
+    
+    reg t0, t1, t2;
+    
+    always @(posedge clk) begin
+        t0 <= btn_in;
+        t1 <= t0;
+        t2 <= t1;
+    end
+    
+    assign btn_out = t2;
+endmodule
+
+module led_driver(
+    input clk_2Hz,
+    input enable,           // enabled during open voting
+    output reg [7:0] LED
+    );
+    
+    parameter S0 = 8'h55;
+    parameter S1 = 8'hAA;
+    
+    reg ctr = 0;
+    
+    always @(posedge clk_2Hz)
+        ctr <= ~ctr;
+    
+    always @(posedge clk_2Hz)
+        if(enable)
+            if(ctr == 0)
+                LED = S0;
+            else
+                LED = S1;
+        else
+            LED = 8'h81;
+  
+endmodule
+
+
+
+
